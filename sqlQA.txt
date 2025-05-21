@@ -1,0 +1,477 @@
+ Write a query to fetch the names of employees and their department name
+
+SELECT e.first_name, d.department_name 
+FROM lok.employees e
+JOIN lok.departments d
+ON e.department_id = d.department_id;
+
+
+
+-------------------------------------
+ Find the total hours logged by each employee across all projects.
+
+SELECT   e.first_name, 
+    e.last_name, 
+    SUM(ep.hours_logged) AS total_hours_logged
+FROM lok.employee_projects ep
+join lok.employees e ON e.employee_id =ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name;
+----------------------------------------------------------
+ Retrieve the department name and count of employees in each department.
+
+ SELECT d.department_name, COUNT(e.employee_id) AS employee_count
+FROM lok.departments d
+LEFT JOIN lok.employees e ON d.department_id = e.department_id
+GROUP BY d.department_name;
+
+ Identify employees who work on more than 2 projects.
+ 
+ SELECT e.employee_id, e.first_name, e.last_name, COUNT(ep.project_id) AS project_count
+FROM lok.employees e
+JOIN lok.employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name
+HAVING COUNT(ep.project_id) > 2;
+
+Write a query to find employees who do not work on any project
+
+SELECT e.employee_id, e.first_name, e.last_name, COUNT(ep.project_id) AS project_count
+FROM lok.employees e
+JOIN lok.employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name
+HAVING COUNT(ep.project_id) is null;
+ --------------------------------------------------------------------------------------
+ 
+  Find employees earning a salary greater than the average salary of their department.
+
+SELECT e.employee_id, e.first_name, e.last_name, e.salary, e.department_id
+FROM lok.employees e
+JOIN (
+    SELECT department_id, AVG(salary) AS avg_salary
+    FROM lok.employees
+    GROUP BY department_id
+) dept_avg ON e.department_id = dept_avg.department_id
+WHERE e.salary > dept_avg.avg_salary;
+--------------------------------------------------------------------------------------
+ 
+  Write a query using a self join to display employee names along with their manager's
+name.
+
+SELECT e.employee_id, e.first_name AS employee_name, 
+       m.employee_id AS manager_id, m.first_name AS manager_name
+FROM lok.employees e
+LEFT JOIN lok.employees m ON e.manager_id = m.employee_id;
+
+
+---------------------------------------------------------------------------------------------
+Identify projects where the total hours logged by all employees exceed 500.
+
+SELECT e.employee_id, e.project_id, p.project_name, SUM(e.hours_logged) AS Total_hours
+FROM lok.employee_projects e
+JOIN lok.projects p ON e.project_id = p.project_id
+GROUP BY e.employee_id, e.project_id, p.project_name
+HAVING SUM(e.hours_logged) > 120;
+
+9. Retrieve the name of the department where the manager has the highest salary.
+
+SELECT e.first_name, d.department_name AS DEPARTMENT_NAME, e.salary AS MAX_salary
+FROM lok.employees e
+JOIN lok.departments d ON e.department_id = d.department_id
+WHERE e.salary = (SELECT MAX(salary) FROM lok.employees);
+
+
+10. Display employees who have logged more than 40 hours on any project using a CASE
+statement to classify them as 'Overtime' or 'Normal.'
+
+SELECT e.employee_id, e.first_name, e.last_name, ep.project_id, ep.hours_logged,
+       CASE 
+           WHEN ep.hours_logged > 40 THEN 'Overtime'
+           ELSE 'Normal'
+       END AS work_category
+FROM lok.employees e
+JOIN lok.employee_projects ep ON e.employee_id = ep.employee_id
+WHERE ep.hours_logged > 40;
+
+11. Find employees who were hired after January 1, 2020, and have not been allocated to
+any projects.
+
+
+SELECT e.employee_id, e.first_name, e.last_name, e.hire_date
+FROM lok.employees e
+LEFT JOIN lok.employee_projects ep ON e.employee_id = ep.employee_id
+WHERE e.hire_date > '2020-01-01'
+AND ep.employee_id IS NULL;
+----------------------------------------------------------------------------
+ Write a query to display employees whose total salary transactions (including
+bonuses/deductions) exceed 10,000
+
+SELECT e.employee_id, e.first_name, e.last_name, SUM(t.amount) AS total_transactions
+FROM lok.employees e
+JOIN lok.transactions t ON e.employee_id = t.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name
+HAVING SUM(t.amount) > 10000;
+----------------------------------------------------------------
+
+. Retrieve the transaction details of employees where the transaction type is "Bonus" and
+the amount is in the top 5% of all bonuses.
+SELECT t.transaction_id, t.employee_id, e.first_name, e.last_name, t.amount, t.transaction_date
+FROM lok.transactions t
+JOIN lok.employees e ON t.employee_id = e.employee_id
+WHERE t.transaction_type = 'Bonus'
+AND t.amount >= (
+    SELECT MIN(amount) 
+    FROM (
+        SELECT amount, NTILE(100) OVER (ORDER BY amount DESC) AS percentile_rank
+        FROM lok.transactions
+        WHERE transaction_type = 'Bonus'
+    ) subquery
+    WHERE percentile_rank <= 5
+);
+
+
+4. List employees whose salary is the highest in their respective department.
+
+
+SELECT e.employee_id, e.first_name, e.last_name, e.salary, e.department_id, d.department_name
+FROM lok.employees e
+JOIN lok.departments d ON e.department_id = d.department_id
+WHERE e.salary = (
+    SELECT MAX(salary) 
+    FROM lok.employees 
+    WHERE department_id = e.department_id
+);
+
+
+
+4. List employees whose salary is the highest in their respective department.
+
+
+SELECT e.employee_id, e.first_name, e.last_name, e.salary, e.department_id, d.department_name
+FROM lok.employees e
+JOIN lok.departments d ON e.department_id = d.department_id
+WHERE e.salary = (
+    SELECT MAX(salary) 
+    FROM lok.employees 
+    WHERE department_id = e.department_id  -- Filtering employees within the same department
+);
+
+
+Display the average hours logged by employees for each project.
+SELECT 
+    p.project_id, 
+    p.project_name, 
+    AVG(ep.hours_logged) AS avg_hours_logged
+FROM lok.employee_projects ep
+JOIN lok.projects p ON ep.project_id = p.project_id
+GROUP BY p.project_id, p.project_name;
+Write a query to fetch all employees who belong to the same department as "John Doe"
+using self joins.
+
+SELECT e2.*
+FROM employees e1
+JOIN employees e2 ON e1.department_id = e2.department_id
+WHERE e1.first_name = 'John' AND e1.last_name = 'Doe';
+
+17 Find the departments where no projects have started.
+
+SELECT d.*
+FROM departments d
+LEFT JOIN employees e ON d.department_id = e.department_id
+LEFT JOIN employee_projects ep ON e.employee_id = ep.employee_id
+LEFT JOIN projects p ON ep.project_id = p.project_id AND p.start_date IS NOT NULL
+WHERE p.project_id IS NULL;
+
+  18. Retrieve employee details for employees working on all projects.
+SELECT e.*
+FROM employees e
+JOIN employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name, e.department_id, e.hire_date, e.salary
+HAVING COUNT(DISTINCT ep.project_id) = (SELECT COUNT(*) FROM projects);
+
+19.List employees whose names start with the letter 'A' and have logged more than 20 hours
+on any project.
+
+SELECT DISTINCT e.*
+FROM employees e
+JOIN employee_projects ep ON e.employee_id = ep.employee_id
+WHERE (e.first_name LIKE 'A%' OR e.last_name LIKE 'A%')
+  AND ep.hours_logged > 20;
+  
+  
+  
+  . Identify the total transactions per employee along with their latest transaction date
+  SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    SUM(t.amount) AS total_amount,
+    MAX(t.transaction_date) AS latest_transaction_date
+FROM employees e
+JOIN transactions t ON e.employee_id = t.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name;
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------
+1. Write a. Write a query to list employees, their projects, and hours logged, with projects having
+more than 100 hours total.
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    p.project_id,
+    p.project_name,
+    ep.hours_logged
+FROM employee_projects ep
+JOIN employees e ON ep.employee_id = e.employee_id
+JOIN projects p ON ep.project_id = p.project_id
+WHERE ep.project_id IN (
+    SELECT project_id
+    FROM employee_projects
+    GROUP BY project_id
+    HAVING SUM(hours_logged) > 100
+);
+
+. Find employees with the most logged hours across all projects.
+
+
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    SUM(ep.hours_logged) AS total_hours
+FROM employees e
+JOIN employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name
+HAVING SUM(ep.hours_logged) = (
+    SELECT MAX(total_hours)
+    FROM (
+        SELECT SUM(hours_logged) AS total_hours
+        FROM employee_projects
+        GROUP BY employee_id
+    ) AS sub
+);
+
+
+
+3. Display department names and the total salary paid to employees in each department.
+
+SELECT 
+    d.department_name,
+    SUM(e.salary) AS total_salary
+FROM departments d
+JOIN employees e ON d.department_id = e.department_id
+GROUP BY d.department_name;
+
+
+
+
+4Retrieve employees whose salaries are above the average salary across the company.
+
+SELECT *
+FROM employees
+WHERE salary > (
+    SELECT AVG(salary) FROM employees
+);
+
+  
+  
+  Write a query to display projects that started after 2023 and do not have any employees
+assigned yet
+  
+  
+  SELECT p.*
+FROM projects p
+LEFT JOIN employee_projects ep ON p.project_id = ep.project_id
+WHERE p.start_date > '2023-12-31'
+  AND ep.employee_id IS NULL;
+  
+  
+  
+  
+  . Using a CASE statement, classify transactions as "High Value" if the amount is greater
+than 5,000; otherwise, classify them as "Low Value.
+
+
+SELECT 
+    transaction_id,
+    employee_id,
+    amount,
+    transaction_date,
+    transaction_type,
+    CASE 
+        WHEN amount > 5000 THEN 'High Value'
+        ELSE 'Low Value'
+    END AS transaction_classification
+FROM transactions;
+
+
+ Identify the project(s) with the most employees assigned.
+
+SELECT 
+    p.project_id,
+    p.project_name,
+    COUNT(ep.employee_id) AS employee_count
+FROM projects p
+JOIN employee_projects ep ON p.project_id = ep.project_id
+GROUP BY p.project_id, p.project_name
+HAVING COUNT(ep.employee_id) = (
+    SELECT MAX(emp_count)
+    FROM (
+        SELECT COUNT(employee_id) AS emp_count
+        FROM employee_projects
+        GROUP BY project_id
+    ) AS sub
+);
+
+Display departments and the count of employees earning below 50,000.
+
+
+SELECT 
+    d.department_name,
+    COUNT(e.employee_id) AS employee_count_below_50000
+FROM departments d
+JOIN employees e ON d.department_id = e.department_id
+WHERE e.salary < 50000
+GROUP BY d.department_name;
+
+
+
+
+
+10. Retrieve project names and the average hours logged per employee for each project.
+11. Write a query to display transaction amounts for employees hired in 2022 or later.
+12. Identify employees who have not logged any hours on projects but have received salary
+transactions.
+13. Find departments with no employees using a LEFT JOIN.
+14. Retrieve the employees who have worked on more than one project and logged over 200
+hours in total.
+15. Write a query to fetch projects where no hours have been logged by employees.
+16. Display employees who have received both a bonus and a deduction in their
+transactions.
+17. Identify employees with missing or null last_name values and classify them as "Data
+Issue."
+18. Using a self join, display pairs of employees in the same department with different
+salaries.
+19. Write a query to calculate the total hours logged for each employee and classify them into
+"High Performer" (> 100 hours) or "Normal Perform
+
+
+
+
+
+SELECT 
+    p.project_name,
+    AVG(ep.hours_logged) AS avg_hours_per_employee
+FROM projects p
+JOIN employee_projects ep ON p.project_id = ep.project_id
+GROUP BY p.project_name;
+11. Display transaction amounts for employees hired in 2022 or later.
+sql
+Copy
+Edit
+SELECT 
+    t.*
+FROM transactions t
+JOIN employees e ON t.employee_id = e.employee_id
+WHERE e.hire_date >= '2022-01-01';
+12. Identify employees who have not logged any hours on projects but have received salary transactions.
+sql
+Copy
+Edit
+SELECT DISTINCT e.*
+FROM employees e
+LEFT JOIN employee_projects ep ON e.employee_id = ep.employee_id
+JOIN transactions t ON e.employee_id = t.employee_id
+WHERE ep.employee_id IS NULL AND t.transaction_type = 'Salary';
+13. Find departments with no employees using a LEFT JOIN.
+sql
+Copy
+Edit
+SELECT d.*
+FROM departments d
+LEFT JOIN employees e ON d.department_id = e.department_id
+WHERE e.employee_id IS NULL;
+14. Retrieve the employees who have worked on more than one project and logged over 200 hours in total.
+sql
+Copy
+Edit
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    COUNT(DISTINCT ep.project_id) AS project_count,
+    SUM(ep.hours_logged) AS total_hours
+FROM employees e
+JOIN employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name
+HAVING COUNT(DISTINCT ep.project_id) > 1 AND SUM(ep.hours_logged) > 200;
+15. Fetch projects where no hours have been logged by employees.
+sql
+Copy
+Edit
+SELECT p.*
+FROM projects p
+LEFT JOIN employee_projects ep ON p.project_id = ep.project_id
+WHERE ep.project_id IS NULL OR ep.hours_logged IS NULL;
+16. Display employees who have received both a bonus and a deduction in their transactions.
+sql
+Copy
+Edit
+SELECT e.*
+FROM employees e
+WHERE e.employee_id IN (
+    SELECT employee_id
+    FROM transactions
+    WHERE transaction_type = 'Bonus'
+)
+AND e.employee_id IN (
+    SELECT employee_id
+    FROM transactions
+    WHERE transaction_type = 'Deduction'
+);
+17. Identify employees with missing or null last_name values and classify them as "Data Issue."
+sql
+Copy
+Edit
+SELECT 
+    employee_id,
+    first_name,
+    last_name,
+    'Data Issue' AS status
+FROM employees
+WHERE last_name IS NULL OR last_name = '';
+18. Using a self join, display pairs of employees in the same department with different salaries.
+sql
+Copy
+Edit
+SELECT 
+    e1.employee_id AS emp1_id,
+    e1.first_name AS emp1_name,
+    e2.employee_id AS emp2_id,
+    e2.first_name AS emp2_name,
+    e1.department_id,
+    e1.salary AS emp1_salary,
+    e2.salary AS emp2_salary
+FROM employees e1
+JOIN employees e2 ON e1.department_id = e2.department_id 
+                 AND e1.employee_id <> e2.employee_id 
+                 AND e1.salary <> e2.salary;
+19. Calculate total hours logged for each employee and classify them as "High Performer" (> 100 hours) or "Normal Performer."
+sql
+Copy
+Edit
+SELECT 
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    COALESCE(SUM(ep.hours_logged), 0) AS total_hours,
+    CASE 
+        WHEN COALESCE(SUM(ep.hours_logged), 0) > 100 THEN 'High Performer'
+        ELSE 'Normal Performer'
+    END AS performance_category
+FROM employees e
+LEFT JOIN employee_projects ep ON e.employee_id = ep.employee_id
+GROUP BY e.employee_id, e.first_name, e.last_name;
